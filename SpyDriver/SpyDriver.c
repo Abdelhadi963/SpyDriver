@@ -106,7 +106,6 @@ NTSTATUS DeviceClose(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 }
 
 
-
 // ---------------------------------------------------------------
 // IOCTL Control handler
 // ---------------------------------------------------------------
@@ -193,7 +192,7 @@ NTSTATUS DeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
             status = STATUS_BUFFER_TOO_SMALL;
             break;
         }
-        status = SpyIoHideProcess(
+        status = SpyIoHideProcessById(
             buffer,
             outBufferLength,
             &bytesReturned
@@ -209,7 +208,7 @@ NTSTATUS DeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
             status = STATUS_BUFFER_TOO_SMALL;
             break;
         }
-        status = SpyIoSyncProcessMetadata(
+        status = SpyIoSyncProcessMetadataById(
             buffer,
             outBufferLength,
             &bytesReturned

