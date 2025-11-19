@@ -39,5 +39,8 @@
     <ClInclude Include="tokenops.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="pplops.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

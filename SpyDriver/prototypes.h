@@ -69,3 +69,15 @@ NTSTATUS SpyIoSyncProcessMetadata(
     ULONG outputLength,
     PULONG_PTR bytesReturned
 );
+
+NTSTATUS SpyIoSetProcessProtection(
+    PVOID outputBuffer,
+    ULONG outputLength,
+    PULONG_PTR bytesReturned
+);
+
+NTSTATUS SpyIoRemoveProcessProtection(
+    PVOID outputBuffer,
+    ULONG outputLength,
+    PULONG_PTR bytesReturned
+);

