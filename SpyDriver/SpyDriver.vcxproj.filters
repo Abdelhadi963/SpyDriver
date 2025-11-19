@@ -23,4 +23,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="common.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="prototypes.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="driverops.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="processops.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tokenops.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
