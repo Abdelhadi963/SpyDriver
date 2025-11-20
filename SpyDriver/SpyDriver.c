@@ -250,14 +250,28 @@ NTSTATUS DeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
         break;
     }
 
-    case IOCTL_SPY_CALLBACK:
-        DbgPrint("[*] IOCTL_SPY_CALLBACK received\n");
+    case IOCTL_SPY_PCALLBACK:
+        DbgPrint("[*] IOCTL_SPY_PCALLBACK received\n");
         if (outBufferLength < 1024) {
             DbgPrint("[-] Output buffer too small\n");
             status = STATUS_BUFFER_TOO_SMALL;
             break;
         }
         status = SpyIoEnumerateProcessCallbacks(
+            buffer,
+            outBufferLength,
+            &bytesReturned
+        );
+        break;
+
+    case IOCTL_SPY_TCALLBACK:
+        DbgPrint("[*] IOCTL_SPY_TCALLBACK received\n");
+        if (outBufferLength < 1024) {
+            DbgPrint("[-] Output buffer too small\n");
+            status = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+        status = SpyIoEnumerateThreadCallbacks(
             buffer,
             outBufferLength,
             &bytesReturned

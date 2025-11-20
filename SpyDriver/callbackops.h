@@ -98,7 +98,10 @@ VOID GetDriverNameFromAddress(PVOID address, PCHAR outName, ULONG outSize)
     ExFreePoolWithTag(modules, 'IppY');
 }
 
+
+// ---------------------------------------------------------------
 // Process callback enumeration IOCTL handler
+// ---------------------------------------------------------------
 NTSTATUS SpyIoEnumerateProcessCallbacks(
     PVOID outputBuffer,
     ULONG outputLength,
@@ -112,14 +115,14 @@ NTSTATUS SpyIoEnumerateProcessCallbacks(
     NTSTATUS status;
     size_t writtenBytes = 0;
 
-    status = RtlStringCbPrintfA(out + offset, outputLength - offset,
-        "[*] Enumerating Process Callbacks:\n\n");
+    /*status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[*] Enumerating PspCreateProcessNotifyRoutine Callbacks:\n");
     if (!NT_SUCCESS(status)) {
         *bytesReturned = 0;
         return status;
     }
     status = RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
-    offset += (ULONG)writtenBytes;
+    offset += (ULONG)writtenBytes;*/
 
     PVOID ntosBase = GetKernelModuleBase("ntoskrnl.exe");
     if (!ntosBase) {
@@ -134,13 +137,19 @@ NTSTATUS SpyIoEnumerateProcessCallbacks(
 
     DbgPrint("[+] ntoskrnl.exe base: 0x%p\n", ntosBase);
 
+	// append kernel base info to output
+    /*status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[+] ntoskrnl.exe base: 0x%p\n", ntosBase);
+    RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+    offset += (ULONG)writtenBytes;*/
+
     PEX_CALLBACK_ROUTINE_BLOCK* callbackArray =
         (PEX_CALLBACK_ROUTINE_BLOCK*)((ULONG_PTR)ntosBase + 0xCFFC00);
 
     DbgPrint("[+] Callback array at: 0x%p\n", callbackArray);
 
     status = RtlStringCbPrintfA(out + offset, outputLength - offset,
-        "[+] Callback array at: 0x%p\n\n", callbackArray);
+        "[+] PspCreateProcessNotifyRoutine array at: 0x%p\n", callbackArray);
     RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
     offset += (ULONG)writtenBytes;
 
@@ -171,7 +180,97 @@ NTSTATUS SpyIoEnumerateProcessCallbacks(
     }
 
     status = RtlStringCbPrintfA(out + offset, outputLength - offset,
-        "\n[+] Found %lu active callbacks\n", callbackCount);
+        "[+] Found %lu active callbacks\n", callbackCount);
+    RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+    offset += (ULONG)writtenBytes;
+
+    *bytesReturned = offset;
+    return STATUS_SUCCESS;
+}
+
+// ---------------------------------------------------------------
+//  Thread callback enumeration IOCTL handler
+// ---------------------------------------------------------------
+
+NTSTATUS SpyIoEnumerateThreadCallbacks(
+    PVOID outputBuffer,
+    ULONG outputLength,
+    PULONG_PTR bytesReturned
+)
+{
+    DbgPrint("[*] Thread callback enumeration initiated\n");
+
+    char* out = (char*)outputBuffer;
+    ULONG offset = 0;
+    NTSTATUS status;
+    size_t writtenBytes = 0;
+
+    /*status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[*] Enumerating PspCreateThreadNotifyRoutine Callbacks:\n");
+    if (!NT_SUCCESS(status)) {
+        *bytesReturned = 0;
+        return status;
+    }
+    status = RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+    offset += (ULONG)writtenBytes;*/
+
+    PVOID ntosBase = GetKernelModuleBase("ntoskrnl.exe");
+    if (!ntosBase) {
+        DbgPrint("[-] Failed to get ntoskrnl base\n");
+        status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+            "[-] Failed to locate kernel base\n");
+        RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+        offset += (ULONG)writtenBytes;
+        *bytesReturned = offset;
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    DbgPrint("[+] ntoskrnl.exe base: 0x%p\n", ntosBase);
+
+	// append kernel base info to output
+    /*status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+		"[+] ntoskrnl.exe base: 0x%p\n", ntosBase);
+	RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+	offset += (ULONG)writtenBytes;*/
+
+    PEX_CALLBACK_ROUTINE_BLOCK* callbackArray =
+        (PEX_CALLBACK_ROUTINE_BLOCK*)((ULONG_PTR)ntosBase + 0xCFFE00);
+
+    DbgPrint("[+] Callback array at: 0x%p\n", callbackArray);
+
+    status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[+] PspCreateThreadNotifyRoutine array at: 0x%p\n", callbackArray);
+    RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+    offset += (ULONG)writtenBytes;
+
+    ULONG callbackCount = 0;
+    for (ULONG i = 0; i < 64; i++) {
+        PEX_CALLBACK_ROUTINE_BLOCK block = callbackArray[i];
+
+        if (!block) continue;
+
+        /*PVOID callbackFunc = (PVOID)((ULONG_PTR)block & 0xFFFFFFFFFFFFFFF8);*/
+        PVOID callbackFunc = *((PVOID*)((ULONG_PTR)block & 0xFFFFFFFFFFFFFFF8));
+
+        if (!callbackFunc || !MmIsAddressValid(callbackFunc)) continue;
+
+        callbackCount++;
+
+        CHAR driverName[256] = "Unknown";
+        GetDriverNameFromAddress(callbackFunc, driverName, sizeof(driverName));
+
+        DbgPrint("[%02lu] 0x%p -> %s\n", i, callbackFunc, driverName);
+
+        status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+            "[%02lu] 0x%p -> %s\n", i, callbackFunc, driverName);
+        if (!NT_SUCCESS(status)) break;
+
+        RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+        offset += (ULONG)writtenBytes;
+    }
+
+    status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[+] Found %lu active callbacks\n", callbackCount);
     RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
     offset += (ULONG)writtenBytes;
 

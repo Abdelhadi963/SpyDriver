@@ -110,6 +110,11 @@ NTSTATUS SpyIoRemoveProcessProtection(
     ULONG outputLength,
     PULONG_PTR bytesReturned
 );
+NTSTATUS SpyIoEnumerateThreadCallbacks(
+    PVOID outputBuffer,
+    ULONG outputLength,
+    PULONG_PTR bytesReturned
+);
 
 // ---------------------------------------------------------------
 // External kernel functions
