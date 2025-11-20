@@ -18,6 +18,34 @@ typedef struct _LDR_DATA_TABLE_ENTRY {
 } LDR_DATA_TABLE_ENTRY, * PLDR_DATA_TABLE_ENTRY;
 
 
+// System module information structures
+typedef struct _RTL_PROCESS_MODULE_INFORMATION {
+    HANDLE Section;
+    PVOID MappedBase;
+    PVOID ImageBase;
+    ULONG ImageSize;
+    ULONG Flags;
+    USHORT LoadOrderIndex;
+    USHORT InitOrderIndex;
+    USHORT LoadCount;
+    USHORT OffsetToFileName;
+    UCHAR FullPathName[256];
+} RTL_PROCESS_MODULE_INFORMATION, * PRTL_PROCESS_MODULE_INFORMATION;
+
+typedef struct _RTL_PROCESS_MODULES {
+    ULONG NumberOfModules;
+    RTL_PROCESS_MODULE_INFORMATION Modules[1];
+} RTL_PROCESS_MODULES, * PRTL_PROCESS_MODULES;
+
+//typedef struct _EX_RUNDOWN_REF {
+//    ULONG_PTR Count;
+//} EX_RUNDOWN_REF;
+
+typedef struct _EX_CALLBACK_ROUTINE_BLOCK {
+    EX_RUNDOWN_REF RundownProtect;
+    PVOID Function;
+    PVOID Context;
+} EX_CALLBACK_ROUTINE_BLOCK, * PEX_CALLBACK_ROUTINE_BLOCK;
 
 // ---------------------------------------------------------------
 // Kernel exported globals
@@ -29,6 +57,7 @@ NTSYSAPI
 PCHAR
 NTAPI
 PsGetProcessImageFileName(_In_ PEPROCESS Process);
+
 
 
 
@@ -77,6 +106,30 @@ NTSTATUS SpyIoSetProcessProtection(
 );
 
 NTSTATUS SpyIoRemoveProcessProtection(
+    PVOID outputBuffer,
+    ULONG outputLength,
+    PULONG_PTR bytesReturned
+);
+
+// ---------------------------------------------------------------
+// External kernel functions
+NTKERNELAPI NTSTATUS ZwQuerySystemInformation(
+    IN ULONG SystemInformationClass,
+    OUT PVOID SystemInformation,
+    IN ULONG SystemInformationLength,
+    OUT PULONG ReturnLength OPTIONAL
+);
+
+// System information classes
+#define SystemModuleInformation 11
+
+// Helper function prototypes
+PVOID GetKernelModuleBase(const char* moduleName);
+
+VOID GetDriverNameFromAddress(PVOID address, PCHAR outName, ULONG outSize);
+
+// Callback enumeration IOCTL handler
+NTSTATUS SpyIoEnumerateProcessCallbacks(
     PVOID outputBuffer,
     ULONG outputLength,
     PULONG_PTR bytesReturned

@@ -105,9 +105,8 @@ int HandleDriverCommand(int argc, char* argv[], char* buffer)
     }
     // Action: --callback
     else if (strcmp(action, "--callback") == 0) {
-        printf("[*] Enumerating kernel callbacks...\n\n");
-        printf("[!] Not yet implemented\n");
-        // TODO: SendIOCTL(IOCTL_SPY_CALLBACK, NULL, 0, buffer, BUFFER_SIZE);
+        /*printf("[*] Enumerating kernel callbacks...\n\n");*/
+        SendIOCTL(IOCTL_SPY_CALLBACK, NULL, 0, buffer, BUFFER_SIZE);
         return 0;
     }
     // Unknown action

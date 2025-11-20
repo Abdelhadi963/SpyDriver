@@ -95,6 +95,7 @@
     <ClCompile Include="SpyDriver.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="callbackops.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="driverops.h" />
     <ClInclude Include="pplops.h" />

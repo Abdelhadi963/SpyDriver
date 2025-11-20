@@ -42,5 +42,8 @@
     <ClInclude Include="pplops.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="callbackops.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
