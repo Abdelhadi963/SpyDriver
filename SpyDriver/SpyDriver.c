@@ -293,7 +293,16 @@ NTSTATUS DeviceControl(PDEVICE_OBJECT DeviceObject, PIRP Irp)
 
     case IOCTL_SPY_PATCH:
         DbgPrint("[*] IOCTL_SPY_PATCH received\n");
-        // TODO: Implement
+        if (inBufferLength < sizeof(SPY_PATCH_INPUT)) {
+            DbgPrint("[-] Input buffer too small\n");
+            status = STATUS_BUFFER_TOO_SMALL;
+            break;
+        }
+        status = SpyIoCallbacksPatchByIndex(
+            buffer,
+            outBufferLength,
+            &bytesReturned
+        );
         break;
 
     default:

