@@ -19,6 +19,8 @@
 #define IOCTL_SPY_PPL         CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2057, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_SPY_UNPPL       CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2058, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_SPY_TCALLBACK   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2059, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_SPY_ICALLBACK   CTL_CODE(FILE_DEVICE_UNKNOWN, 0x2060, METHOD_BUFFERED, FILE_ANY_ACCESS)
+
 // ---------------------------------------------------------------
 // Common defines use by client 
 // ---------------------------------------------------------------
@@ -32,6 +34,14 @@
 typedef struct _SPY_HIDE_INPUT {
     CHAR g_Name[256];
 } SPY_HIDE_INPUT, * PSPY_HIDE_INPUT;
+
+// --------------------------------------------------------------
+// Patching callback input 
+// --------------------------------------------------------------
+typedef struct _PATCH_INPUT {
+    ULONG Type;      // 0 = CreateProcess, 1 = CreateThread, 2 = LoadImage
+    ULONG Index;     // index inside array
+} PATCH_INPUT, * PPATCH_INPUT;
 
 // ---------------------------------------------------------------
 // Global Saves (Future backup use)

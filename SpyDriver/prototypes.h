@@ -116,6 +116,12 @@ NTSTATUS SpyIoEnumerateThreadCallbacks(
     PULONG_PTR bytesReturned
 );
 
+NTSTATUS SpyIoEnumerateLoadImageCallbacks(
+    PVOID outputBuffer,
+    ULONG outputLength,
+    PULONG_PTR bytesReturned
+);
+
 // ---------------------------------------------------------------
 // External kernel functions
 NTKERNELAPI NTSTATUS ZwQuerySystemInformation(

@@ -65,6 +65,42 @@ BOOL ConversionGuard(const CHAR* str) {
     }
 }
 
+int HandleCallbackCommand(int argc, char* argv[], char* buffer)
+{
+
+    if (argc < 3) {
+        printf("[!] Missing action for callback category\n");
+        printf("Usage: %s callback --list|--patch \n", argv[0]);
+        return 1;
+    }
+
+    const char* action = argv[2];
+
+    // Action: --patch
+    if (strcmp(action, "--patch") == 0) {
+        printf("[*] Patching kernel callback...\n\n");
+		printf("[!] Not implemented yet\n");
+        return 0;
+    }
+    
+    // Action: --list
+    else if (strcmp(action, "--list") == 0) {
+        /*printf("[*] Enumerating kernel callbacks...\n\n");*/
+        SendIOCTL(IOCTL_SPY_PCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
+        printf("\n");
+        SendIOCTL(IOCTL_SPY_TCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
+        printf("\n");
+        SendIOCTL(IOCTL_SPY_ICALLBACK, NULL, 0, buffer, BUFFER_SIZE);
+        return 0;
+    }
+    // Unknown action
+    else {
+        printf("[!] Unknown driver action: %s\n", action);
+        printf("Valid actions: --list, --patch\n");
+        return 1;
+    }
+}
+
 int HandleDriverCommand(int argc, char* argv[], char* buffer)
 {   
    
@@ -103,18 +139,20 @@ int HandleDriverCommand(int argc, char* argv[], char* buffer)
         SendIOCTL(IOCTL_SPY_DHIDE, buffer, sizeof(input), buffer, BUFFER_SIZE);
         return 0;
     }
-    // Action: --callback
-    else if (strcmp(action, "--callback") == 0) {
-        /*printf("[*] Enumerating kernel callbacks...\n\n");*/
-        SendIOCTL(IOCTL_SPY_PCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
-        printf("\n");
-        SendIOCTL(IOCTL_SPY_TCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
-        return 0;
-    }
+  //  // Action: --callback
+  //  else if (strcmp(action, "--callback") == 0) {
+  //      /*printf("[*] Enumerating kernel callbacks...\n\n");*/
+  //      SendIOCTL(IOCTL_SPY_PCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
+  //      printf("\n");
+  //      SendIOCTL(IOCTL_SPY_TCALLBACK, NULL, 0, buffer, BUFFER_SIZE);
+		//printf("\n");
+  //      SendIOCTL(IOCTL_SPY_ICALLBACK, NULL, 0, buffer, BUFFER_SIZE);
+  //      return 0;
+  //  }
     // Unknown action
     else {
         printf("[!] Unknown driver action: %s\n", action);
-        printf("Valid actions: --list, --hide, --callback\n");
+        printf("Valid actions: --list, --hide\n");
         return 1;
     }
 }
@@ -244,6 +282,7 @@ int main(int argc, char* argv[])
     }
     
 	Art();
+    printf("");
     // Allocate buffer
     char* buffer = (char*)malloc(BUFFER_SIZE);
     if (!buffer) {
@@ -262,6 +301,9 @@ int main(int argc, char* argv[])
     // Category: process
     else if (strcmp(category, "process") == 0) {
         result = HandleProcessCommand(argc, argv, buffer);
+    }
+    else if (strcmp(category, "callback") == 0) {
+        result = HandleCallbackCommand(argc, argv, buffer);
     }
     // Unknown category
     else {

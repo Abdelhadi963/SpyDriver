@@ -277,3 +277,78 @@ NTSTATUS SpyIoEnumerateThreadCallbacks(
     *bytesReturned = offset;
     return STATUS_SUCCESS;
 }
+
+// ---------------------------------------------------------------
+//  Load Image callback enumeration IOCTL handler
+// ---------------------------------------------------------------]
+
+NTSTATUS SpyIoEnumerateLoadImageCallbacks(
+    PVOID outputBuffer,
+    ULONG outputLength,
+    PULONG_PTR bytesReturned
+)
+{
+    DbgPrint("[*] LoadImage callback enumeration initiated\n");
+
+    char* out = (char*)outputBuffer;
+    ULONG offset = 0;
+    NTSTATUS status;
+    size_t writtenBytes = 0;
+
+
+    PVOID ntosBase = GetKernelModuleBase("ntoskrnl.exe");
+    if (!ntosBase) {
+        DbgPrint("[-] Failed to get ntoskrnl base\n");
+        status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+            "[-] Failed to locate kernel base\n");
+        RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+        offset += (ULONG)writtenBytes;
+        *bytesReturned = offset;
+        return STATUS_UNSUCCESSFUL;
+    }
+
+    DbgPrint("[+] ntoskrnl.exe base: 0x%p\n", ntosBase);
+
+    PEX_CALLBACK_ROUTINE_BLOCK* callbackArray =
+        (PEX_CALLBACK_ROUTINE_BLOCK*)((ULONG_PTR)ntosBase + 0xD00000);
+
+    DbgPrint("[+] Callback array at: 0x%p\n", callbackArray);
+
+    status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[+] PspLoadImageNotifyRoutine array at: 0x%p\n", callbackArray);
+    RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+    offset += (ULONG)writtenBytes;
+
+    ULONG callbackCount = 0;
+    for (ULONG i = 0; i < 64; i++) {
+        PEX_CALLBACK_ROUTINE_BLOCK block = callbackArray[i];
+
+        if (!block) continue;
+
+        PVOID callbackFunc = *((PVOID*)((ULONG_PTR)block & 0xFFFFFFFFFFFFFFF8));
+
+        if (!callbackFunc || !MmIsAddressValid(callbackFunc)) continue;
+
+        callbackCount++;
+
+        CHAR driverName[256] = "Unknown";
+        GetDriverNameFromAddress(callbackFunc, driverName, sizeof(driverName));
+
+        DbgPrint("[%02lu] 0x%p -> %s\n", i, callbackFunc, driverName);
+
+        status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+            "[%02lu] 0x%p -> %s\n", i, callbackFunc, driverName);
+        if (!NT_SUCCESS(status)) break;
+
+        RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+        offset += (ULONG)writtenBytes;
+    }
+
+    status = RtlStringCbPrintfA(out + offset, outputLength - offset,
+        "[+] Found %lu active callbacks\n", callbackCount);
+    RtlStringCbLengthA(out + offset, outputLength - offset, &writtenBytes);
+    offset += (ULONG)writtenBytes;
+
+    *bytesReturned = offset;
+    return STATUS_SUCCESS;
+}
